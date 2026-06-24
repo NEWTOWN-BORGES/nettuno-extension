@@ -1,0 +1,115 @@
+{
+  "manifest_version": 3,
+  "name": "NETTUNO — Proteção contra Burlas Online",
+  "version": "5.3",
+  "description": "Escudos de confiança da comunidade no OLX, Vinted, eBay, Amazon e Idealista. Evita burlas e golpes ao comprar online. Grátis.",
+  "homepage_url": "https://nettuno-e6036.web.app/",
+  "author": "Neuton Borges",
+  "icons": {
+    "16": "icon-16.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [
+    "storage",
+    "identity",
+    "alarms",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://*.googleapis.com/*",
+    "https://*.firebaseapp.com/*",
+    "https://*.firebasestorage.app/*",
+    "https://oauth2.googleapis.com/*",
+    "https://accounts.google.com/*"
+  ],
+  "oauth2": {
+    "client_id": "610650936846-mfcsq1dhqaika9gvv41lv86g12ukldpf.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/userinfo.profile",
+      "openid"
+    ]
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.idealista.pt/*",
+        "*://*.idealista.es/*",
+        "*://*.idealista.it/*",
+        "*://*.imovirtual.pt/*",
+        "*://*.imovirtual.com/*",
+        "*://*.olx.pt/*",
+        "*://*.olx.com/*",
+        "*://*.olx.com.br/*",
+        "*://*.standvirtual.pt/*",
+        "*://*.standvirtual.com/*",
+        "*://*.vinted.pt/*",
+        "*://*.vinted.com/*",
+        "*://*.vinted.co.uk/*",
+        "*://*.vinted.fr/*",
+        "*://*.vinted.de/*",
+        "*://*.vinted.es/*",
+        "*://*.vinted.it/*",
+        "*://*.ebay.com/*",
+        "*://*.ebay.co.uk/*",
+        "*://*.ebay.de/*",
+        "*://*.ebay.fr/*",
+        "*://*.ebay.it/*",
+        "*://*.ebay.es/*",
+        "*://*.ebay.com.br/*",
+        "*://*.amazon.com/*",
+        "*://*.amazon.co.uk/*",
+        "*://*.amazon.de/*",
+        "*://*.amazon.fr/*",
+        "*://*.amazon.it/*",
+        "*://*.amazon.es/*",
+        "*://*.amazon.com.br/*",
+        "*://*.facebook.com/marketplace/*",
+        "*://*.aliexpress.pt/*",
+        "*://*.aliexpress.com/*",
+        "*://*.custojusto.pt/*",
+        "*://*.mercadolivre.com.br/*",
+        "*://*.wallapop.com/*",
+        "*://nettuno-e6036.web.app/*"
+      ],
+      "js": [
+        "nettuno-utils.js",
+        "firebase-app-compat.js",
+        "firebase-auth-compat.js",
+        "firebase-firestore-compat.js",
+        "fraud-intelligence.js",
+        "firebase-config.js",
+        "profile-validation.js",
+        "auth-service.js",
+        "translations.js",
+        "signals-data.js",
+        "heuristics.js",
+        "affiliate-config.js",
+        "ui-renderer.js",
+        "vote-service.js",
+        "content.js"
+      ],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["icon-16.png", "icon-48.png", "icon-128.png", "sch_logo_true.png", "privacy.html"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "action": {
+    "default_title": "NETTUNO",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon-16.png",
+      "48": "icon-48.png",
+      "128": "icon-128.png"
+    }
+  }
+}
