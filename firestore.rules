@@ -1,0 +1,133 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ────────────────────────────────────────────────────────────
+    // Helpers de validação de campos (anti-manipulação de reputação)
+    // ────────────────────────────────────────────────────────────
+
+    // Verdadeiro se `field` não está a ser escrito OU mantém o valor anterior.
+    // Usado para campos que o cliente NUNCA deve alterar (ex: accuracyRate,
+    // calculado server-side / Admin SDK).
+    function unchanged(field) {
+      return !(field in request.resource.data)
+        || ( (field in resource.data)
+             && request.resource.data[field] == resource.data[field] );
+    }
+
+    // Verdadeiro se o contador `field` não é escrito, ou é monotónico e só sobe
+    // no máximo +1 por escrita (o fluxo de voto legítimo incrementa 0 ou 1).
+    // Bloqueia inflação (set 99999) E regressão (descer o contador) pelo cliente.
+    function counterCapped(field) {
+      return !(field in request.resource.data)
+        || ( (field in resource.data)
+             ? ( request.resource.data[field] >= resource.data[field]
+                 && request.resource.data[field] <= resource.data[field] + 1 )
+             : ( request.resource.data[field] >= 0
+                 && request.resource.data[field] <= 1 ) );
+    }
+
+    // Admin — acesso de leitura total ao dashboard.
+    // Restrito por custom claim `admin` (definida server-side via Admin SDK).
+    // Não usar email hardcoded: evita expor dados pessoais e é mais robusto.
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.admin == true;
+    }
+
+    // ────────────────────────────────────────────────────────────
+    // User profiles
+    // Leitura/escrita só do próprio doc (ou admin para o dashboard).
+    // Reputação protegida:
+    //   - accuracyRate: imutável pelo cliente (server-only)
+    //   - voteCount / signalCount: só +1 por escrita (anti-inflação)
+    // Fix completo de CRÍTICO-2 exige mover os incrementos para Cloud Functions.
+    // ────────────────────────────────────────────────────────────
+    match /users/{userId} {
+      allow read:   if isAdmin() || (request.auth != null && request.auth.uid == userId);
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null
+                    && request.auth.uid == userId
+                    && unchanged('accuracyRate')
+                    && counterCapped('voteCount')
+                    && counterCapped('signalCount');
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Votos — leitura pública (avatares/contadores no painel), escrita só do próprio.
+    // voteType restrito: 'like' | 'dislike' | null (null = voto removido/neutralizado).
+    function validVoteType() {
+      return !('voteType' in request.resource.data)
+        || request.resource.data.voteType in ['like', 'dislike']
+        || request.resource.data.voteType == null;
+    }
+    match /votes/{voteId} {
+      allow read:   if true;
+      allow create: if request.auth != null
+                    && request.resource.data.userId == request.auth.uid
+                    && validVoteType();
+      allow update: if request.auth != null
+                    && resource.data.userId == request.auth.uid
+                    // userId imutável: impede "doar" o voto a outro uid
+                    && request.resource.data.userId == resource.data.userId
+                    && validVoteType();
+      allow delete: if false;
+    }
+
+    // Analytics de sinais — leitura autenticada, escrita por qualquer auth
+    // TODO(CRÍTICO-1/ALTO-3): mover escrita para Cloud Functions; rules não
+    // conseguem validar os valores agregados escritos pelo cliente.
+    match /signals_analytics/{doc} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // Estatísticas diárias por plataforma
+    match /platform_daily/{doc} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // Config aprendida (pesos heurísticos + baselines de preço).
+    // Leitura pública (a extensão lê sem login). Escrita só server-side
+    // (Cloud Functions com Admin SDK ignoram estas regras) — cliente nunca escreve.
+    match /config/{doc} {
+      allow read:  if true;
+      allow write: if false;
+    }
+
+    // Resumo global — leitura pública, escrita autenticada
+    match /global_summary/{doc} {
+      allow read:  if true;
+      allow write: if request.auth != null;
+    }
+
+    // Ads — leitura e escrita autenticada
+    // TODO(CRÍTICO-1): a escrita de likes/dislikes/effectiveLikes é feita pelo
+    // cliente sem validação de valores. Mover para Cloud Functions para impedir
+    // forja de reputação (marcar burla como TRUSTED, etc.).
+    match /ads/{adId} {
+      allow read:  if true;  // leitura pública — badges visíveis sem login
+      allow write: if request.auth != null;
+    }
+
+    // Eventos do utilizador por anúncio (userEvents/{uid}_{adId}) — guarda o
+    // estado dos sinais/votos que o utilizador marcou. Escrito por recordSignal.
+    match /userEvents/{id} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // Sellers — fingerprint cross-anúncio do vendedor. Escrito por recordSignal/vote.
+    match /sellers/{id} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // Events — log append-only de eventos (sinais) para treino/analytics.
+    match /events/{id} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null;
+    }
+  }
+}

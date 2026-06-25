@@ -23,6 +23,5 @@ SOFTWARE.
 ---
 
 NOTICE: This license covers the source code only. It does not grant rights to
-the "NETTUNO" name, logo, or brand. The backend services (scoring engine,
-anti-abuse logic, vote data) that power this extension are proprietary and
-are not included in this repository.
+the "NETTUNO" name, logo, or brand. Runtime secrets (e.g. IP_SALT, read from
+the environment) and the community vote data are not part of this repository.
