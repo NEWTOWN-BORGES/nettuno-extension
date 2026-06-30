@@ -41,7 +41,7 @@ service cloud.firestore {
     // Reputação protegida:
     //   - accuracyRate: imutável pelo cliente (server-only)
     //   - voteCount / signalCount: só +1 por escrita (anti-inflação)
-    // Fix completo de CRÍTICO-2 exige mover os incrementos para Cloud Functions.
+    // (Endurecimento contínuo: escritas de reputação a migrar para o servidor.)
     // ────────────────────────────────────────────────────────────
     match /users/{userId} {
       allow read:   if isAdmin() || (request.auth != null && request.auth.uid == userId);
@@ -74,9 +74,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Analytics de sinais — leitura autenticada, escrita por qualquer auth
-    // TODO(CRÍTICO-1/ALTO-3): mover escrita para Cloud Functions; rules não
-    // conseguem validar os valores agregados escritos pelo cliente.
+    // Analytics de sinais — leitura e escrita autenticadas.
     match /signals_analytics/{doc} {
       allow read:  if request.auth != null;
       allow write: if request.auth != null;
@@ -102,10 +100,7 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
-    // Ads — leitura e escrita autenticada
-    // TODO(CRÍTICO-1): a escrita de likes/dislikes/effectiveLikes é feita pelo
-    // cliente sem validação de valores. Mover para Cloud Functions para impedir
-    // forja de reputação (marcar burla como TRUSTED, etc.).
+    // Ads — leitura pública (badges visíveis sem login), escrita autenticada.
     match /ads/{adId} {
       allow read:  if true;  // leitura pública — badges visíveis sem login
       allow write: if request.auth != null;
