@@ -56,8 +56,13 @@ function hashIp(ip) {
 
 // ──────────────────────────────────────────────────────────────
 // submitVote — ponto ÚNICO de escrita de votos/reputação
+// NOTA App Check: temporariamente desativado (enforceAppCheck:false). A correção
+// da forja de reputação vem da validação SERVER-SIDE (trust calculada aqui +
+// rate limit + cooldown + máx. votos), NÃO do App Check. App Check numa extensão
+// de browser é um problema à parte → fica como hardening posterior. Reativar
+// quando resolvido (e voltar a deployar).
 // ──────────────────────────────────────────────────────────────
-exports.submitVote = onCall({ enforceAppCheck: true, cors: true }, async (req) => {
+exports.submitVote = onCall({ enforceAppCheck: false, cors: true }, async (req) => {
   const uid = req.auth && req.auth.uid;
   if (!uid) throw new HttpsError('unauthenticated', 'Login Google necessário para votar.');
 
@@ -231,7 +236,7 @@ exports.submitVote = onCall({ enforceAppCheck: true, cors: true }, async (req) =
 // ──────────────────────────────────────────────────────────────
 // deleteMyAccount — RGPD: apaga perfil + votos + conta Auth
 // ──────────────────────────────────────────────────────────────
-exports.deleteMyAccount = onCall({ enforceAppCheck: true, cors: true }, async (req) => {
+exports.deleteMyAccount = onCall({ enforceAppCheck: false, cors: true }, async (req) => {
   const uid = req.auth && req.auth.uid;
   if (!uid) throw new HttpsError('unauthenticated', 'Não autenticado.');
 

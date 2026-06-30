@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "NETTUNO — Proteção contra Burlas Online",
-  "version": "5.3",
+  "version": "5.4",
   "description": "Escudos de confiança da comunidade no OLX, Vinted, eBay, Amazon e Idealista. Evita burlas e golpes ao comprar online. Grátis.",
   "homepage_url": "https://nettuno-e6036.web.app/",
   "author": "Neuton Borges",
@@ -81,6 +81,7 @@
         "firebase-app-compat.js",
         "firebase-auth-compat.js",
         "firebase-firestore-compat.js",
+        "firebase-functions-compat.js",
         "fraud-intelligence.js",
         "firebase-config.js",
         "profile-validation.js",
