@@ -43,15 +43,14 @@ const BURST_RED_THRESHOLD = 8;    // ≥8 vermelhos em 15s → suspeito
 // previsíveis (rainbow table sobre o espaço IPv4 é trivial) e deixam de ser
 // pseudonimização válida (RGPD). Definir antes do deploy:
 //   firebase functions:secrets:set IP_SALT
-// Fail-fast: rebenta no cold start em vez de correr inseguro silenciosamente.
-const IP_SALT = process.env.IP_SALT;
-if (!IP_SALT) {
-  throw new Error('[NETTUNO] IP_SALT em falta. Corre: firebase functions:secrets:set IP_SALT');
-}
-
+// Lido LAZY dentro do hashIp (NÃO no top-level): um throw no top-level partiria
+// a descoberta de funções durante o `firebase deploy`. Continua a falhar no
+// primeiro voto se o salt faltar.
 function hashIp(ip) {
   if (!ip) return null;
-  return crypto.createHash('sha256').update(IP_SALT + ip).digest('hex').slice(0, 24);
+  const salt = process.env.IP_SALT;
+  if (!salt) throw new HttpsError('failed-precondition', 'IP_SALT em falta no servidor.');
+  return crypto.createHash('sha256').update(salt + ip).digest('hex').slice(0, 24);
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -62,7 +61,7 @@ function hashIp(ip) {
 // de browser é um problema à parte → fica como hardening posterior. Reativar
 // quando resolvido (e voltar a deployar).
 // ──────────────────────────────────────────────────────────────
-exports.submitVote = onCall({ enforceAppCheck: false, cors: true }, async (req) => {
+exports.submitVote = onCall({ enforceAppCheck: false, cors: true, secrets: ['IP_SALT'] }, async (req) => {
   const uid = req.auth && req.auth.uid;
   if (!uid) throw new HttpsError('unauthenticated', 'Login Google necessário para votar.');
 
@@ -236,7 +235,7 @@ exports.submitVote = onCall({ enforceAppCheck: false, cors: true }, async (req) 
 // ──────────────────────────────────────────────────────────────
 // deleteMyAccount — RGPD: apaga perfil + votos + conta Auth
 // ──────────────────────────────────────────────────────────────
-exports.deleteMyAccount = onCall({ enforceAppCheck: false, cors: true }, async (req) => {
+exports.deleteMyAccount = onCall({ enforceAppCheck: false, cors: true, secrets: ['IP_SALT'] }, async (req) => {
   const uid = req.auth && req.auth.uid;
   if (!uid) throw new HttpsError('unauthenticated', 'Não autenticado.');
 
