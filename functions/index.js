@@ -61,7 +61,7 @@ function hashIp(ip) {
 // de browser é um problema à parte → fica como hardening posterior. Reativar
 // quando resolvido (e voltar a deployar).
 // ──────────────────────────────────────────────────────────────
-exports.submitVote = onCall({ enforceAppCheck: false, cors: true, secrets: ['IP_SALT'] }, async (req) => {
+exports.submitVote = onCall({ enforceAppCheck: false, cors: true, secrets: ['IP_SALT'], invoker: 'public' }, async (req) => {
   const uid = req.auth && req.auth.uid;
   if (!uid) throw new HttpsError('unauthenticated', 'Login Google necessário para votar.');
 
@@ -235,7 +235,7 @@ exports.submitVote = onCall({ enforceAppCheck: false, cors: true, secrets: ['IP_
 // ──────────────────────────────────────────────────────────────
 // deleteMyAccount — RGPD: apaga perfil + votos + conta Auth
 // ──────────────────────────────────────────────────────────────
-exports.deleteMyAccount = onCall({ enforceAppCheck: false, cors: true, secrets: ['IP_SALT'] }, async (req) => {
+exports.deleteMyAccount = onCall({ enforceAppCheck: false, cors: true, secrets: ['IP_SALT'], invoker: 'public' }, async (req) => {
   const uid = req.auth && req.auth.uid;
   if (!uid) throw new HttpsError('unauthenticated', 'Não autenticado.');
 
