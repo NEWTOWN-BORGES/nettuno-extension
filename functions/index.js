@@ -182,6 +182,13 @@ exports.submitVote = onCall({ enforceAppCheck: false, cors: true, secrets: ['IP_
         yellow: FieldValue.increment(color === 'yellow' ? 1 : 0),
         red:    FieldValue.increment(color === 'red'    ? 1 : 0),
       },
+      // Compat de display: o cliente (v5.4) lê o schema antigo (likes/dislikes/
+      // uniqueUsers) para desenhar o escudo. Mantemos esses campos em sincronia
+      // com os votos server-side (green→like, red→dislike; uniqueUsers no 1º voto
+      // do utilizador neste anúncio). Yellow é conceito novo, sem equivalente antigo.
+      likes:       FieldValue.increment(color === 'green' ? 1 : 0),
+      dislikes:    FieldValue.increment(color === 'red'   ? 1 : 0),
+      uniqueUsers: FieldValue.increment(prevCount === 0 ? 1 : 0),
       wPos: next.wPos, wNeg: next.wNeg, total: next.total,
       score: next.score, weightedScore: next.weightedScore, trustState: next.trustState,
       updatedAt: now, schemaVersion: 3,
