@@ -66,7 +66,9 @@ if (typeof window !== 'undefined') {
   }
 
   async function serverVote({ adId, color, platform, deviceFingerprint }) {
-    const fn = firebase.functions('europe-west1').httpsCallable('submitVote');
+    // NB: em compat, a região define-se em app().functions(region) — NÃO em
+    // firebase.functions(region), que rebenta ("invalid-app-argument").
+    const fn = firebase.app().functions('europe-west1').httpsCallable('submitVote');
     const idempotencyKey = `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
     const res = await fn({ adId, voteColor: color, platform, deviceFingerprint, idempotencyKey });
     return res.data;
